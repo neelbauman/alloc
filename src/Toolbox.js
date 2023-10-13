@@ -14,11 +14,6 @@ import {
 	minmax
 } from '@adobe/react-spectrum';
 
-import {
-	Card,
-	CardView,
-	GridLayout
-} from '@react-spectrum/card';
 
 import LOGO from './static/LOGO.svg';
 import assignCardBg from './static/image/assign_cardbg.jpg';
@@ -29,28 +24,6 @@ import crawlerCardLogo from './static/image/crawler_logo.jpg';
 import toolCardDummy from './static/image/toolCardDummy.svg';
 
 
-
-function _View ( props ) {
-	if ( props.position ) {
-		return (
-			<View
-			{...props}
-			position={props.position.position ? props.position.position : 'static'}
-			top={props.position.top ? props.position.top : 'auto'}
-			bottom={props.position.bottom ? props.position.bottom : 'auto'}
-			left={props.position.left ? props.position.left : 'auto'}
-			right={props.position.right ? props.position.right : 'auto'}
-			zIndex={props.position.zIndex ? props.position.zIndex : 'auto'}
-			isHidden={props.position.isHidden ? props.position.isHidden : 'auto'}
-			/>
-		);
-	} else {
-		return (
-			<View {...props}/>
-		);
-	}
-
-}
 
 function LogoImageHero ({ position, src }) {
 	return (
@@ -100,6 +73,9 @@ function CardLogoImage ({ position, src, alt }) {
 
 
 function CardTool ({ position, heading, content, src_logo, src_bg }) {
+	// TODO
+	// Cardのクリックに応答してアプリstateを変更させ、
+	// AssignToolコンポーネントをレンダーできるようにする。
 	return (
 		<View {...position}
 		maxWidth='280px'
@@ -193,7 +169,10 @@ function ButtonOpenTheBox ({ position }) {
 }
 
 
-function App() {
+function Toolbox() {
+	// TODO
+	// tool stateを用意し、どのtoolが選択されているかに応じて
+	// renderするtoolコンポーネントを変更できるようにする。
 
     return (
     	<Provider theme={defaultTheme}>
@@ -242,4 +221,4 @@ function App() {
   );
 }
 
-export default App;
+export default Toolbox;
