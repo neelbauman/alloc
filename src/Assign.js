@@ -39,6 +39,15 @@ function InputPage ({
 	setMinPerSession,
 	setAssignAppPhase
 }) {
+	// player数よりrole数が多いとアルゴリズムがまわらないので、
+	// nameが空の要素を追加しておく
+	let d = players.length - roles.length
+	if ( d < 0 ) {
+		for ( let i = 0; i < -d; i++ ) {
+			setPlayers([ ...players, {id: players.slice(-1)[0].id+1, name: "", tag:""} ])
+		}
+	}
+
 	return (
 		<View height='100%'>
 		<Grid height='100%' 
@@ -56,7 +65,7 @@ function InputPage ({
 			'main-l main-l main-l main-r main-r main-r sidebar sidebar',
 			'footer footer footer footer footer footer sidebar sidebar'
 		]}>
-			<View gridArea='main-l' overflow='scroll' paddingX='10px'>
+			<View gridArea='main-l' overflow='scroll' paddingX='10px' paddingLeft='30px'>
 				<FormList
 					title='Players'
 					label='name'
@@ -72,14 +81,14 @@ function InputPage ({
 					setItemList={setRoles}
 				/>
 			</View>
-			<View gridArea='sidebar' padding='10px' paddingBottom='20px'>
+			<View gridArea='sidebar' padding='10px' paddingBottom='20px' paddingRight='30px'>
 			<Grid height='100%' justifyContent='stretch' alignContent='end' justifyItems='start'>
 				<Slider label='sessions'
 				value={numberOfSessions}
 				onChange={setNumberOfSessions}
-				defaultValue={5}
+				defaultValue={1}
 				minValue={1}
-				maxValue={10}
+				maxValue={players.length}
 				/>
 				<Slider label='time'
 				value={minPerSession}
@@ -99,7 +108,7 @@ function InputPage ({
 				</Button>
 			</Grid>
 			</View>
-			<View gridArea='footer' alignSelf='end' padding='10px' paddingBottom='20px'>
+			<View gridArea='footer' alignSelf='end' padding='10px' paddingBottom='20px' paddingX='30px'>
 				<Heading level={3} margin={0}>assign.tool</Heading>
 			</View>
 		</Grid>
@@ -107,7 +116,6 @@ function InputPage ({
 
 	);
 }
-
 
 
 function FormList ({
@@ -144,6 +152,7 @@ function FormList ({
 		let processed = itemList.filter(
 			( item ) => item.id != deletedItemId
 		)
+		// reset_index
 		processed.forEach(
 			( item, i ) => { item.id = i }
 		)
@@ -228,7 +237,6 @@ function SessionList ({
 	minPerSession,
 	setAssignAppPhase
 }) {
-	let [ sessions, setSessions ] = useState();
 
 	const getRandomInt = (min, max) => {
 		min = Math.ceil(min);
@@ -240,39 +248,54 @@ function SessionList ({
 		return [...Array(m)].map( _ => [...Array(n)].map( _ => val));
 	}
 
-	const init = gen2DArray(roles.length, roles.length, [...players])
-	console.log('init', init)
+	// Core Algorithm
+	const makeAssign = ( initArray ) => {
+		for ( let i = 0; i < initArray.length; i++ ) {
+			while ( ! initArray[i].every(elm => !Array.isArray(elm)) ) {
+				// initArray[i]の全ての要素がArrayでなくなるまでループする
+				//
+				let slot = initArray[i].map(
+					( s ) => {
+						if ( Array.isArray(s) ) {
+							return s.length
+						} else {
+							return Infinity
+						}
+					}
+				);
+				let j = slot.findIndex( elm => elm == Math.min(...slot) )
+				let r = getRandomInt(0, initArray[i][j].length);
 
-	let session_list = [...init];
+				let a_ij = initArray[i][j][r]
+				initArray[i][j] = a_ij
 
-	// assign
-	//
-	for ( let i = 0; i < roles.length; i++ ) {
-		for ( let j = 0; j < roles.length; j++ ) {
-			console.log(i, j, 'start')
+				for ( let k = 0; k < roles.length; k++ ) {
+					if ( Array.isArray(initArray[i][k]) ) {
+						initArray[i][k] = initArray[i][k].filter(a => a != a_ij);
+					}
+				}
+				for ( let l = i+1; l < initArray.length; l++ ) {
+					initArray[l][j] = initArray[l][j].filter(a => a != a_ij);
+				}
 
-			let r = getRandomInt(0, session_list[i][j].length);
-			let a_ij = session_list[i][j][r]
-
-			session_list[i][j] = a_ij
-
-			for ( let k = j+1; k < roles.length; k++ ) {
-				session_list[i][k] = session_list[i][k].filter(a => a != a_ij);
-			}
-			for ( let l = i+1; l < roles.length; l++ ) {
-				session_list[l][j] = session_list[l][j].filter(a => a != a_ij);
 			}
 		}
+		// Tableコンポーネントにわたすために整形
+		const session_list = initArray.map(
+			( session, i ) => {
+				return Object.assign({id: i}, session)
+			}
+		)
+
+
+		console.log('sessions', session_list)
+		return session_list
 	}
 
-	session_list = session_list.map(
-		( session, i ) => {
-			return (
-				{id: i, time: minPerSession, assign: session}
-			)
-		}
-	)
-	console.log(session_list)
+	const init = gen2DArray(numberOfSessions, roles.length, [...players])
+	let session_list = makeAssign(init);
+
+	let [ sessions, setSessions ] = useState([...session_list]);
 	
 	return (
 		<Grid height='100%' 
@@ -302,22 +325,26 @@ function SessionList ({
 				variant="negative"
 				aria-label=""
 				marginTop='40px'
-				onPress={e => setAssignAppPhase('sessionList')}
+				onPress={e => setAssignAppPhase('input')}
 				>
 					Back To Edit
 				</Button>
 				<Button
 				variant="negative"
 				aria-label=""
-				marginTop='40px'
-				onPress={e => setAssignAppPhase('sessionList')}
+				marginTop='10px'
+				onPress={ e => {
+					const init = gen2DArray(numberOfSessions, roles.length, [...players])
+					let session_list = makeAssign(init);
+					setSessions([...session_list]);
+				}}
 				>
 					Reroll
 				</Button>
 				<Button
 				variant="accent"
 				aria-label=""
-				marginTop='40px'
+				marginTop='20px'
 				onPress={e => setAssignAppPhase('sessionList')}
 				>
 					Go Ahead!
@@ -338,32 +365,19 @@ function Table ({
 }) {
 	return (
 		<TableView>
-			<TableHeader>
-				{roles.map(
-					( role ) => {
-						return (
-							<Column>{role.name}</Column>
-						);
-					}
+			<TableHeader columns={roles}>
+				{ role => (
+					<Column key={role.id}>{role.name}</Column>
 				)}
 			</TableHeader>
-			<TableBody>
-				{sessions.map(
-					( session ) => {
-						return (
-							<Row>
-								{session.assign.map(
-									( player ) => {
-										return (
-											<Cell>{player.name}</Cell>
-										);
-									}
-								)}
-							</Row>
-						);
-					}
+			<TableBody items={sessions}>
+				{ item => (
+					<Row>
+						{ columnKey => (
+							<Cell>{item[columnKey].name}</Cell>
+						)}
+					</Row>
 				)}
-							
 			</TableBody>
 		</TableView>
 	);
@@ -381,13 +395,15 @@ function Assign () {
 		{id: 0, name: "のぐち", tag: ""},
 		{id: 1, name: "ノグチ", tag: ""},
 		{id: 2, name: "野口", tag: ""},
-		{id: 3, name: "NOGUCHI", tag: ""}
+		{id: 3, name: "NOGUCHI", tag: ""},
+		{id: 4, name: "noguchi", tag: ""},
+		{id: 5, name: "能口", tag: ""}
 	])
 	let [ roles, setRoles ] = useState([
 		{id: 0, name: "進行" , tag: ""},
 		{id: 1, name: "書記", tag: ""},
 		{id: 2, name: "計時", tag: ""},
-		{id: 4, name: "発表", tag: ""},
+		{id: 3, name: "発表", tag: ""},
 	])
 	let [ numberOfSessions, setNumberOfSessions ] = useState(1)
 	let [ minPerSession, setMinPerSession ] = useState(1)
