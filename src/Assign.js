@@ -39,14 +39,7 @@ function InputPage ({
 	setMinPerSession,
 	setAssignAppPhase
 }) {
-	// player数よりrole数が多いとアルゴリズムがまわらないので、
-	// nameが空の要素を追加しておく
-	let d = players.length - roles.length
-	if ( d < 0 ) {
-		for ( let i = 0; i < -d; i++ ) {
-			setPlayers([ ...players, {id: players.slice(-1)[0].id+1, name: "", tag:""} ])
-		}
-	}
+
 
 	return (
 		<View height='100%'>
@@ -125,7 +118,7 @@ function FormList ({
 	setItemList
 }) {
 	const handleItemListAdd = ( e ) => {
-		setItemList([...itemList, {id: itemList.slice(-1)[0].id+1, name: "", tag:""}]);
+		setItemList([...itemList, {id: itemList.slice(-1)[0].id+1, name: "", tag:"", hidden: false}]);
 	}
 
 	const handleItemListChange = ( editedItemId, editedItemText ) => {
@@ -232,11 +225,25 @@ function FormList ({
 
 function SessionList ({
 	players,
+	setPlayers,
 	roles,
+	setRoles,
 	numberOfSessions,
 	minPerSession,
 	setAssignAppPhase
 }) {
+	// player数とrole数の数を揃えるようにダミーを入れる
+	// nameが空の要素を追加しておく
+	let d = players.length - roles.length
+	if ( d < 0 ) {
+		for ( let i = 0; i < -d; i++ ) {
+			setPlayers([ ...players, {id: players.slice(-1)[0].id+1, name: "", tag:"", hidden: true} ])
+		}
+	} else if ( d > 0 ) {
+		for ( let i = 0; i < d; i++ ) {
+			setRoles([...roles, {id: roles.slice(-1)[0].id+1, name: "", tag: "", hidden: true} ])
+		}
+	}
 
 	const getRandomInt = (min, max) => {
 		min = Math.ceil(min);
@@ -250,11 +257,13 @@ function SessionList ({
 
 	// Core Algorithm
 	const makeAssign = ( initArray ) => {
-		for ( let i = 0; i < initArray.length; i++ ) {
-			while ( ! initArray[i].every(elm => !Array.isArray(elm)) ) {
+		let slot;
+		let i, j, r;
+		for ( i = 0; i < initArray.length; i++ ) {
+			while ( ! initArray[i].every(elm => ! Array.isArray(elm)) ) {
 				// initArray[i]の全ての要素がArrayでなくなるまでループする
 				//
-				let slot = initArray[i].map(
+				slot = initArray[i].map(
 					( s ) => {
 						if ( Array.isArray(s) ) {
 							return s.length
@@ -263,11 +272,10 @@ function SessionList ({
 						}
 					}
 				);
-				let j = slot.findIndex( elm => elm == Math.min(...slot) )
-				let r = getRandomInt(0, initArray[i][j].length);
+				j = slot.findIndex( elm => elm == Math.min(...slot) )
+				r = getRandomInt(0, initArray[i][j].length);
 
 				let a_ij = initArray[i][j][r]
-				initArray[i][j] = a_ij
 
 				for ( let k = 0; k < roles.length; k++ ) {
 					if ( Array.isArray(initArray[i][k]) ) {
@@ -278,17 +286,19 @@ function SessionList ({
 					initArray[l][j] = initArray[l][j].filter(a => a != a_ij);
 				}
 
+				initArray[i][j] = a_ij
+
 			}
 		}
-		// Tableコンポーネントにわたすために整形
+		// Tableコンポーネントに渡せる形に整形
 		const session_list = initArray.map(
 			( session, i ) => {
 				return Object.assign({id: i}, session)
 			}
 		)
 
-
-		console.log('sessions', session_list)
+		console.log('slot', [...slot])
+		console.log('sessions', [...session_list])
 		return session_list
 	}
 
@@ -316,7 +326,7 @@ function SessionList ({
 			<View gridArea='main' overflow='scroll' paddingX='10px'>
 			<Grid>
 				<Heading level={1}>Sessions</Heading>
-				<Table players={players} roles={roles} sessions={session_list}></Table>
+				<Table players={players} roles={roles} sessions={sessions}></Table>
 			</Grid>
 			</View>
 			<View gridArea='sidebar' padding='10px' paddingBottom='20px'>
@@ -365,7 +375,7 @@ function Table ({
 }) {
 	return (
 		<TableView>
-			<TableHeader columns={roles}>
+			<TableHeader columns={roles.filter(role => role.hidden == false)}>
 				{ role => (
 					<Column key={role.id}>{role.name}</Column>
 				)}
@@ -374,7 +384,7 @@ function Table ({
 				{ item => (
 					<Row>
 						{ columnKey => (
-							<Cell>{item[columnKey].name}</Cell>
+							<Cell>{ item[columnKey] == undefined ? "" : item[columnKey].name}</Cell>
 						)}
 					</Row>
 				)}
@@ -392,18 +402,18 @@ function Summary () {
 function Assign () {
 	let [ assignAppPhase, setAssignAppPhase ] = useState("input");
 	let [ players, setPlayers ] = useState([
-		{id: 0, name: "のぐち", tag: ""},
-		{id: 1, name: "ノグチ", tag: ""},
-		{id: 2, name: "野口", tag: ""},
-		{id: 3, name: "NOGUCHI", tag: ""},
-		{id: 4, name: "noguchi", tag: ""},
-		{id: 5, name: "能口", tag: ""}
+		{id: 0, name: "のぐち", tag: "", hidden: false},
+		{id: 1, name: "ノグチ", tag: "", hidden: false},
+		{id: 2, name: "野口", tag: "", hidden: false},
+		{id: 3, name: "NOGUCHI", tag: "", hidden: false},
+		{id: 4, name: "noguchi", tag: "", hidden: false},
+		{id: 5, name: "能口", tag: "", hidden: false}
 	])
 	let [ roles, setRoles ] = useState([
-		{id: 0, name: "進行" , tag: ""},
-		{id: 1, name: "書記", tag: ""},
-		{id: 2, name: "計時", tag: ""},
-		{id: 3, name: "発表", tag: ""},
+		{id: 0, name: "進行" , tag: "", hidden: false},
+		{id: 1, name: "書記", tag: "", hidden: false},
+		{id: 2, name: "計時", tag: "", hidden: false},
+		{id: 3, name: "発表", tag: "", hidden: false},
 	])
 	let [ numberOfSessions, setNumberOfSessions ] = useState(1)
 	let [ minPerSession, setMinPerSession ] = useState(1)
@@ -424,7 +434,9 @@ function Assign () {
 	} else if ( assignAppPhase === "sessionList" ) {
 		rendered = <SessionList
 			players={players}
+			setPlayers={setPlayers}
 			roles={roles}
+			setRoles={setRoles}
 			numberOfSessions={numberOfSessions}
 			minPerSession={minPerSession}
 			setAssignAppPhase={setAssignAppPhase}
