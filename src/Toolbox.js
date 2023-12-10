@@ -91,7 +91,7 @@ function ToolCard ({ position, heading, content, src_logo, src_bg, handleToolSel
 			</View>
 			<Heading marginStart='10px'>{heading}</Heading>
 			<Content marginStart='10px' marginBottom='10px'>{content}</Content>
-			<Button value={heading} onPress={(event) => handleToolSelected(heading)}>
+			<Button variant='primary' style='outline' value={heading} onPress={(event) => handleToolSelected(heading)}>
 				OPEN
 			</Button>
 		</View>
@@ -160,8 +160,8 @@ function ButtonOpenTheBox ({ position }) {
 		<View {...position}
 		margin = '20px'
 		>
-			<Button variant='accent'>
-				<Text>OPEN THE BOX</Text>
+			<Button variant='primary' style='fill'>
+				OPEN THE BOX
 			</Button>
 		</View>
 	);
