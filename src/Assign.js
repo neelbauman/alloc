@@ -75,11 +75,13 @@ function InputPage ({
 			<View gridArea='sidebar' padding='10px' paddingBottom='20px' paddingRight='30px'>
 			<Grid height='100%' justifyContent='stretch' alignContent='end' justifyItems='start'>
 				<Slider label='sessions'
-				value={numberOfSessions}
-				onChange={setNumberOfSessions}
+				value={Math.min(numberOfSessions, Math.max(players.length, roles.length))}
+				onChange={value => setNumberOfSessions(value)}
 				defaultValue={1}
 				minValue={1}
-				maxValue={players.length}
+				maxValue={Math.max(players.length, roles.length)}
+				getValueLabel={ value => `${value}` }
+				isFilled
 				/>
 				<Slider label='time'
 				value={minPerSession}
@@ -87,7 +89,8 @@ function InputPage ({
 				defaultValue={10}
 				minValue={1}
 				maxValue={60}
-				getValueLabel={(time) => `${time} min/session`}
+				getValueLabel={ value => `${value} min/session`}
+				isFilled
 				/>
 				<Button
 				variant="accent"
@@ -156,10 +159,10 @@ function FormList ({
 		let processed = itemList.filter(
 			( item ) => item.id != deletedItemId
 		)
+
 		// reset_index
-		processed.forEach(
-			( item, i ) => { item.id = i }
-		)
+		//
+		processed.forEach(( item, i ) => { item.id = i })
 		setItemList([...processed]);
 	}
 
@@ -370,8 +373,7 @@ function SessionCollection ({
 		sessions={sessions}
 		makeAssign={makeAssign}
 		setAssignAppPhase={setAssignAppPhase}
-		>
-		</SessionInit>
+		/>
 	)
 }
 
@@ -390,7 +392,6 @@ function SessionInit ({
 		setPlayers([...players.filter( player => !player.hidden )])
 		setRoles([...roles.filter( role => !role.hidden )])
 	}
-
 	
 	return (
 		<Grid height='100%' 
@@ -408,13 +409,13 @@ function SessionInit ({
 			'main main main main main main sidebar sidebar',
 			'footer footer footer footer footer footer sidebar sidebar'
 		]}>
-			<View gridArea='main' overflow='scroll' paddingX='10px'>
+			<View gridArea='main' overflow='scroll' paddingX='10px' paddingLeft='30px'>
 			<Grid>
 				<Heading level={1}>Sessions</Heading>
 				<Table players={players} roles={roles} sessions={sessionList}></Table>
 			</Grid>
 			</View>
-			<View gridArea='sidebar' padding='10px' paddingBottom='20px'>
+			<View gridArea='sidebar' padding='10px' paddingBottom='20px' paddingRight='30px'>
 			<Grid height='100%' justifyContent='stretch' alignContent='end' justifyItems='start'>
 				<Button
 				variant="negative"
@@ -448,7 +449,7 @@ function SessionInit ({
 				</Button>
 			</Grid>
 			</View>
-			<View gridArea='footer' alignSelf='end' padding='10px' paddingBottom='20px'>
+			<View gridArea='footer' alignSelf='end' padding='10px' paddingX='30px' paddingBottom='20px'>
 				<Heading level={3} margin={0}>assign.tool</Heading>
 			</View>
 		</Grid>
@@ -493,8 +494,7 @@ function Assign () {
 		{id: 1, name: "ノグチ", tag: "", hidden: false},
 		{id: 2, name: "野口", tag: "", hidden: false},
 		{id: 3, name: "NOGUCHI", tag: "", hidden: false},
-		{id: 4, name: "noguchi", tag: "", hidden: false},
-		{id: 5, name: "能口", tag: "", hidden: false}
+		{id: 4, name: "noguchi", tag: "", hidden: false}
 	])
 	let [ roles, setRoles ] = useState([
 		{id: 0, name: "進行" , tag: "", hidden: false},
