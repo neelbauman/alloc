@@ -39,8 +39,6 @@ function InputPage ({
 	setMinPerSession,
 	setAssignAppPhase
 }) {
-
-
 	return (
 		<View height='100%'>
 		<Grid height='100%' 
@@ -95,7 +93,20 @@ function InputPage ({
 				variant="accent"
 				aria-label=""
 				marginTop='40px'
-				onPress={e => setAssignAppPhase('sessionList')}
+				onPress={ ( e ) => {
+				// player数とrole数の数を揃えるようにダミーとして
+				// nameが空の要素を追加しておく
+					let d = players.length - roles.length
+					let dummy;
+					if ( d < 0 ) {
+						dummy = [...Array(-d)].map( ( _ , i ) => { return {id: players.slice(-1)[0].id + i, name: "", tag: "", hidden: true} });
+						setPlayers([ ...players, ...dummy ]);
+					} else if ( d > 0 ) {
+						dummy = [...Array(d)].map( ( _ , i ) => { return {id: roles.slice(-1)[0].id + i, name: "", tag: "", hidden: true} });
+						setRoles([ ...roles, ...dummy ]);
+					}
+					setAssignAppPhase('sessionList')
+				}}
 				>
 				Make Sessions!
 				</Button>
@@ -223,7 +234,8 @@ function FormList ({
 	)
 }
 
-function SessionList ({
+
+function SessionCollection ({
 	players,
 	setPlayers,
 	roles,
@@ -232,80 +244,136 @@ function SessionList ({
 	minPerSession,
 	setAssignAppPhase
 }) {
-	// player数とrole数の数を揃えるようにダミーを入れる
-	// nameが空の要素を追加しておく
-	let d = players.length - roles.length
-	if ( d < 0 ) {
-		for ( let i = 0; i < -d; i++ ) {
-			setPlayers([ ...players, {id: players.slice(-1)[0].id+1, name: "", tag:"", hidden: true} ])
+
+	console.log('players', players)
+	console.log('roles', roles)
+
+	const makeAssign = (n_sessions, players, roles) => {
+		const getRandomInt = (min, max) => {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min) + min)
 		}
-	} else if ( d > 0 ) {
-		for ( let i = 0; i < d; i++ ) {
-			setRoles([...roles, {id: roles.slice(-1)[0].id+1, name: "", tag: "", hidden: true} ])
+
+		const gen2DArray = (m, n, val=0) => {
+			return [...Array(m)].map( _ => [...Array(n)].map( _ => val));
 		}
-	}
 
-	const getRandomInt = (min, max) => {
-		min = Math.ceil(min);
-		max = Math.floor(max);
-		return Math.floor(Math.random() * (max - min) + min)
-	}
+		const init = gen2DArray(n_sessions, roles.length, [...players])
+		console.log('slots of roles for each session: init', init)
 
-	const gen2DArray = (m, n, val=0) => {
-		return [...Array(m)].map( _ => [...Array(n)].map( _ => val));
-	}
+		let e, i, j, k, l, p, q, r, s;
+		let tmp;
 
-	// Core Algorithm
-	const makeAssign = ( initArray ) => {
-		let slot;
-		let i, j, r;
-		for ( i = 0; i < initArray.length; i++ ) {
-			while ( ! initArray[i].every(elm => ! Array.isArray(elm)) ) {
-				// initArray[i]の全ての要素がArrayでなくなるまでループする
+		// Core Algorithm
+		for ( i = 0; i < n_sessions; i++ ) {
+			console.log('session', i)
+
+			// セッションiについて、
+			// playerごとに候補カラムを数えて持っておく
+			let slots = [...Array(players.length)].map( _ => []).map(
+				( slot, k ) => {
+					p = players.filter( player => player.id == k ).pop()
+					init[i].forEach(
+						( role , l ) => {
+							if ( role.includes(p) ) {
+								slot.push(l)
+							}
+						}
+					);
+					console.log('slot of player k', k, slot)
+					return slot
+				}
+			);
+
+			// init[i]の全ての要素がArrayでなくなるまでループする
+			//
+			while ( ! init[i].every(elm => ! Array.isArray(elm)) ) {
+				// slotサイズが最小のplayerのなかからランダムに選択する
 				//
-				slot = initArray[i].map(
-					( s ) => {
-						if ( Array.isArray(s) ) {
-							return s.length
+				// 1. まずはslot数が最小のplayerをslotから抽出する
+				const min_slots = slots.filter( s => s.length == Math.min(...slots.map( slot => Array.isArray(slot) ? slot.length : slot )) )
+				// 2. その中からランダムにplayerを決める
+				r = getRandomInt(0, min_slots.length);
+				s = min_slots[r]
+				// 3. 選ばれたplayerの元のslotでのindexつまりplayer.idも確保しておく
+				k = slots.findIndex( e => e === s )
+
+				// player k を column j に入れる
+				//
+				// slot sに含まれるカラムのうち、候補のサイズが最小のカラムを探す
+				let tmp = s.map(( e ) => {
+						return init[i][e].length
+					}
+				)
+				console.log('slot of player k ', k, s, ', and size each of those', tmp)
+
+				tmp = tmp.findIndex( e => e == Math.min(...tmp))
+				console.log('selected column', tmp)
+
+				j = s[tmp]
+
+				console.log('assign a player', k, 'to role', j)
+
+				let a_ij = init[i][j].filter( player => player.id == k ).pop()
+				init[i][j] = a_ij
+
+				for ( let l = 0; l < roles.length; l++ ) {
+					if ( Array.isArray(init[i][l]) ) {
+						init[i][l] = init[i][l].filter(player => player != a_ij);
+					}
+				}
+				for ( let l = i+1; l < init.length; l++ ) {
+					init[l][j] = init[l][j].filter(player => player != a_ij);
+				}
+
+				// カラムに割り当てられたplayerのslotはInfinityとする
+				slots[k] = Infinity;
+
+				slots = slots.map(
+					( slot, l ) => {
+						console.log('slot of player l ', l, slot)
+						if ( Array.isArray(slot) && slot.includes(j) ) {
+							return slot.toSpliced(slot.findIndex(s => s == j), 1)
 						} else {
-							return Infinity
+							return slot
 						}
 					}
-				);
-				j = slot.findIndex( elm => elm == Math.min(...slot) )
-				r = getRandomInt(0, initArray[i][j].length);
-
-				let a_ij = initArray[i][j][r]
-
-				for ( let k = 0; k < roles.length; k++ ) {
-					if ( Array.isArray(initArray[i][k]) ) {
-						initArray[i][k] = initArray[i][k].filter(a => a != a_ij);
-					}
-				}
-				for ( let l = i+1; l < initArray.length; l++ ) {
-					initArray[l][j] = initArray[l][j].filter(a => a != a_ij);
-				}
-
-				initArray[i][j] = a_ij
-
+				)
 			}
 		}
 		// Tableコンポーネントに渡せる形に整形
-		const session_list = initArray.map(
+		const sessions = init.map(
 			( session, i ) => {
 				return Object.assign({id: i}, session)
 			}
 		)
+		return sessions
+	} // end makeAssign
 
-		console.log('slot', [...slot])
-		console.log('sessions', [...session_list])
-		return session_list
-	}
+	let sessions = makeAssign(numberOfSessions, players, roles);
 
-	const init = gen2DArray(numberOfSessions, roles.length, [...players])
-	let session_list = makeAssign(init);
+	return (
+		<SessionInit
+		players={players}
+		roles={roles}
+		sessions={sessions}
+		makeAssign={makeAssign}
+		setAssignAppPhase={setAssignAppPhase}
+		>
+		</SessionInit>
+	)
+}
 
-	let [ sessions, setSessions ] = useState([...session_list]);
+function SessionInit ({
+	players,
+	roles,
+	sessions,
+	gen2DArray,
+	makeAssign,
+	setAssignAppPhase
+}) {
+	let [ sessionList, setSessionList ] = useState([...sessions]);
 	
 	return (
 		<Grid height='100%' 
@@ -326,7 +394,7 @@ function SessionList ({
 			<View gridArea='main' overflow='scroll' paddingX='10px'>
 			<Grid>
 				<Heading level={1}>Sessions</Heading>
-				<Table players={players} roles={roles} sessions={sessions}></Table>
+				<Table players={players} roles={roles} sessions={sessionList}></Table>
 			</Grid>
 			</View>
 			<View gridArea='sidebar' padding='10px' paddingBottom='20px'>
@@ -344,9 +412,8 @@ function SessionList ({
 				aria-label=""
 				marginTop='10px'
 				onPress={ e => {
-					const init = gen2DArray(numberOfSessions, roles.length, [...players])
-					let session_list = makeAssign(init);
-					setSessions([...session_list]);
+					let session_list = makeAssign(sessions.length, players, roles);
+					setSessionList([...session_list]);
 				}}
 				>
 					Reroll
@@ -432,7 +499,7 @@ function Assign () {
 			setAssignAppPhase={setAssignAppPhase}
 		/>
 	} else if ( assignAppPhase === "sessionList" ) {
-		rendered = <SessionList
+		rendered = <SessionCollection
 			players={players}
 			setPlayers={setPlayers}
 			roles={roles}
