@@ -94,16 +94,16 @@ function InputPage ({
 				aria-label=""
 				marginTop='40px'
 				onPress={ ( e ) => {
-				// player数とrole数の数を揃えるようにダミーとして
-				// nameが空の要素を追加しておく
+					// player数とrole数の数を揃えるようにダミーとして
+					// nameが空の要素を追加しておく
 					let d = players.length - roles.length
 					let dummy;
 					if ( d < 0 ) {
-						dummy = [...Array(-d)].map( ( _ , i ) => { return {id: players.slice(-1)[0].id + i, name: "", tag: "", hidden: true} });
-						setPlayers([ ...players, ...dummy ]);
+						dummy = [...Array(-d)].map( ( _ , i ) => { return {id: players.slice(-1)[0].id+i+1, name: "", tag: "", hidden: true} });
+						setPlayers([ ...players, ...dummy ])
 					} else if ( d > 0 ) {
-						dummy = [...Array(d)].map( ( _ , i ) => { return {id: roles.slice(-1)[0].id + i, name: "", tag: "", hidden: true} });
-						setRoles([ ...roles, ...dummy ]);
+						dummy = [...Array(d)].map( ( _ , i ) => { return {id: roles.slice(-1)[0].id+i+1, name: "", tag: "", hidden: true} });
+						setRoles([ ...roles, ...dummy ])
 					}
 					setAssignAppPhase('sessionList')
 				}}
@@ -244,7 +244,6 @@ function SessionCollection ({
 	minPerSession,
 	setAssignAppPhase
 }) {
-
 	console.log('players', players)
 	console.log('roles', roles)
 
@@ -260,17 +259,13 @@ function SessionCollection ({
 		}
 
 		const init = gen2DArray(n_sessions, roles.length, [...players])
-		console.log('slots of roles for each session: init', init)
-
 		let e, i, j, k, l, p, q, r, s;
 		let tmp;
 
 		// Core Algorithm
 		for ( i = 0; i < n_sessions; i++ ) {
 			console.log('session', i)
-
-			// セッションiについて、
-			// playerごとに候補カラムを数えて持っておく
+			// count slot for each player at the start of each session i
 			let slots = [...Array(players.length)].map( _ => []).map(
 				( slot, k ) => {
 					p = players.filter( player => player.id == k ).pop()
@@ -288,36 +283,45 @@ function SessionCollection ({
 
 			// init[i]の全ての要素がArrayでなくなるまでループする
 			//
+			// 1ループでsession iのcolumn jに入るplayer kを決める
+			// ループごとに決まったplayerとcolumnに応じてとslotsとinit[i]を適切に修正していく
+			//
+			// したがってループするごとにinitやslotといった同じ配列を修正しているため
+			// コードを読むときは注意してね
+			//
 			while ( ! init[i].every(elm => ! Array.isArray(elm)) ) {
-				// slotサイズが最小のplayerのなかからランダムに選択する
+
+				// slot数が最小のplayer kとそのslot sを探す
 				//
-				// 1. まずはslot数が最小のplayerをslotから抽出する
-				const min_slots = slots.filter( s => s.length == Math.min(...slots.map( slot => Array.isArray(slot) ? slot.length : slot )) )
-				// 2. その中からランダムにplayerを決める
-				r = getRandomInt(0, min_slots.length);
-				s = min_slots[r]
-				// 3. 選ばれたplayerの元のslotでのindexつまりplayer.idも確保しておく
+				const playersWhoHaveMinimumSlots = slots.filter( ( s ) => {
+					return s.length == Math.min(...slots.map( slot => Array.isArray(slot) ? slot.length : slot ))
+				});
+				r = getRandomInt(0, playersWhoHaveMinimumSlots.length);
+				s = playersWhoHaveMinimumSlots[r];
 				k = slots.findIndex( e => e === s )
 
-				// player k を column j に入れる
+				// player kのslot sに含まれるカラム eのうち、候補playerの数が最小のカラムを探す
 				//
-				// slot sに含まれるカラムのうち、候補のサイズが最小のカラムを探す
-				let tmp = s.map(( e ) => {
-						return init[i][e].length
+				j = s.find(
+					( e ) => { 
+						return init[i][e].length == Math.min(...s.map(
+							( f ) => { 
+								return Array.isArray(init[i][f]) ? init[i][f].length : Infinity 
+							}
+						))
 					}
 				)
-				console.log('slot of player k ', k, s, ', and size each of those', tmp)
-
-				tmp = tmp.findIndex( e => e == Math.min(...tmp))
-				console.log('selected column', tmp)
-
-				j = s[tmp]
 
 				console.log('assign a player', k, 'to role', j)
-
+				//
 				let a_ij = init[i][j].filter( player => player.id == k ).pop()
 				init[i][j] = a_ij
 
+				// initが保持しているカラムの候補playerの修正
+				//
+				// session iの各カラムと
+				// session i以降のカラムjから
+				// 割り当てられたplayer kを除外する
 				for ( let l = 0; l < roles.length; l++ ) {
 					if ( Array.isArray(init[i][l]) ) {
 						init[i][l] = init[i][l].filter(player => player != a_ij);
@@ -327,9 +331,13 @@ function SessionCollection ({
 					init[l][j] = init[l][j].filter(player => player != a_ij);
 				}
 
+				// playerの保持しているslotの修正
+				//
 				// カラムに割り当てられたplayerのslotはInfinityとする
 				slots[k] = Infinity;
 
+				// k以外の、まだ割り当てられていないplayerについて、
+				// slotからカラムjを除外する
 				slots = slots.map(
 					( slot, l ) => {
 						console.log('slot of player l ', l, slot)
@@ -356,7 +364,9 @@ function SessionCollection ({
 	return (
 		<SessionInit
 		players={players}
+		setPlayers={setPlayers}
 		roles={roles}
+		setRoles={setRoles}
 		sessions={sessions}
 		makeAssign={makeAssign}
 		setAssignAppPhase={setAssignAppPhase}
@@ -367,13 +377,20 @@ function SessionCollection ({
 
 function SessionInit ({
 	players,
+	setPlayers,
 	roles,
 	sessions,
-	gen2DArray,
+	setRoles,
 	makeAssign,
 	setAssignAppPhase
 }) {
 	let [ sessionList, setSessionList ] = useState([...sessions]);
+
+	const makeClean = () => {
+		setPlayers([...players.filter( player => !player.hidden )])
+		setRoles([...roles.filter( role => !role.hidden )])
+	}
+
 	
 	return (
 		<Grid height='100%' 
@@ -403,7 +420,10 @@ function SessionInit ({
 				variant="negative"
 				aria-label=""
 				marginTop='40px'
-				onPress={e => setAssignAppPhase('input')}
+				onPress={e => {
+					makeClean()
+					setAssignAppPhase('input')
+				}}
 				>
 					Back To Edit
 				</Button>
@@ -442,7 +462,7 @@ function Table ({
 }) {
 	return (
 		<TableView>
-			<TableHeader columns={roles.filter(role => role.hidden == false)}>
+			<TableHeader columns={roles.filter(role => !role.hidden )}>
 				{ role => (
 					<Column key={role.id}>{role.name}</Column>
 				)}
