@@ -69,7 +69,7 @@ function ToolCardLogoImage ({ position, src, alt }) {
 }
 
 
-function ToolCard ({ position, heading, content, src_logo, src_bg, handleToolSelected }) {
+function ToolCard ({ position, heading, content, src_logo, src_bg, handleToolSelected, onDev }) {
 	return (
 		<View {...position}
 			maxWidth='280px'
@@ -91,8 +91,8 @@ function ToolCard ({ position, heading, content, src_logo, src_bg, handleToolSel
 			</View>
 			<Heading marginStart='10px'>{heading}</Heading>
 			<Content marginStart='10px' marginBottom='10px'>{content}</Content>
-			<Button variant='primary' style='outline' value={heading} onPress={(event) => handleToolSelected(heading)}>
-				OPEN
+			<Button isDisabled={onDev ? true :false} variant='primary' style='outline' value={heading} onPress={(event) => handleToolSelected(heading)}>
+				{onDev ? '開発中' : 'OPEN' }
 			</Button>
 		</View>
 	);
@@ -126,6 +126,7 @@ function ToolCardCollection ({ position, handleToolSelected }) {
 					heading='assign.tool'
 					content='Assign players to roles for sections.'
 					handleToolSelected={handleToolSelected}
+					onDev={false}
 				/>
 			</View>
 			<View gridArea="upper-middle">
@@ -135,6 +136,7 @@ function ToolCardCollection ({ position, handleToolSelected }) {
 					heading='crawler.tool'
 					content='Survey site structures.'
 					handleToolSelected={handleToolSelected}
+					onDev={true}
 				/>
 			</View>
 			<View gridArea="upper-left">

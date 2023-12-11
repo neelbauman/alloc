@@ -195,8 +195,12 @@ function FormList ({
 								label={label}
 								labelPosition='side'
 								value={item.name}
+								onChange={e => handleItemListChange(item.id, e)}
+								maxLength={32}
+								minLength={1}
+								isRequired={itemList.length <= 1 ? true : false }
 								isQuiet
-								onChange={e => handleItemListChange(item.id, e)}>
+								>
 								</TextField>
 								</View>
 								<View>
@@ -507,11 +511,9 @@ function Summary () {
 function Assign () {
 	let [ appPhase, setAppPhase ] = useState("input");
 	let [ players, setPlayers ] = useState([
-		{id: 0, name: "のぐち", tag: "", hidden: false},
-		{id: 1, name: "ノグチ", tag: "", hidden: false},
-		{id: 2, name: "野口", tag: "", hidden: false},
-		{id: 3, name: "NOGUCHI", tag: "", hidden: false},
-		{id: 4, name: "noguchi", tag: "", hidden: false}
+		{id: 0, name: "Alice", tag: "", hidden: false},
+		{id: 1, name: "Bob", tag: "", hidden: false},
+		{id: 2, name: "Charlie", tag: "", hidden: false}
 	])
 	let [ roles, setRoles ] = useState([
 		{id: 0, name: "進行" , tag: "", hidden: false},
