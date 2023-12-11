@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/allok/static/css/main.c244ce8a.css",
+    "main.js": "/allok/static/js/main.3b8ae02e.js",
+    "static/js/787.f782e1bc.chunk.js": "/allok/static/js/787.f782e1bc.chunk.js",
+    "static/media/LOGO.svg": "/allok/static/media/LOGO.c71d7c5c4b57e79d72cfb03e6c812d01.svg",
+    "static/media/assign_cardbg.jpg": "/allok/static/media/assign_cardbg.5323905e24178c257962.jpg",
+    "static/media/crawler_cardbg.jpg": "/allok/static/media/crawler_cardbg.65360cbb6afbc99a8eab.jpg",
+    "static/media/toolCardDummy.svg": "/allok/static/media/toolCardDummy.0f1a5279dd4ca4e433dbf49038c0b0ce.svg",
+    "static/media/assign_logo.jpg": "/allok/static/media/assign_logo.4975b4e91c3d9f956bd0.jpg",
+    "static/media/crawler_logo.jpg": "/allok/static/media/crawler_logo.b28685fc2c611f1ea05c.jpg",
+    "index.html": "/allok/index.html",
+    "main.c244ce8a.css.map": "/allok/static/css/main.c244ce8a.css.map",
+    "main.3b8ae02e.js.map": "/allok/static/js/main.3b8ae02e.js.map",
+    "787.f782e1bc.chunk.js.map": "/allok/static/js/787.f782e1bc.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c244ce8a.css",
+    "static/js/main.3b8ae02e.js"
+  ]
+}
